@@ -10,6 +10,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { generateBusinessCopy } from "@/lib/ai";
 import { fetchMyBusiness, isSlugAvailable, uploadMedia, getPublicUrl } from "@/lib/queries";
 import { CATEGORIES, DAYS, PRESET_PALETTES, SOCIAL_PLATFORMS, buildTimeSlots, hexToRgba, readableOn, slugify, type AiContent } from "@/lib/bizcard";
+const _SOCIAL_PLATFORMS = SOCIAL_PLATFORMS ?? [];
+const _DAYS = DAYS ?? [];
+const _CATEGORIES = CATEGORIES ?? [];
+const _PRESET_PALETTES = PRESET_PALETTES ?? [];
 
 type Form = {
   id:string|null; name:string; slug:string; category:string; short_desc:string; long_desc:string;

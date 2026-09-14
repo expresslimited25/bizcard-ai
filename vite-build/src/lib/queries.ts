@@ -32,10 +32,12 @@ export type Profile = {
 export type SocialLink = { id: string; business_id: string; platform: string; url: string; };
 
 export async function fetchProfile(userId: string): Promise<Profile|null> {
-  const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-  if(data) return data;
-  const { data: created } = await supabase.from("profiles").insert({ id: userId }).select("*").maybeSingle();
-  return created ?? null;
+  try {
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    return data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchMyBusiness(userId: string) {

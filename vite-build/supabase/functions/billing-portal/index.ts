@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { origin } = await req.json();
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SB_SERVICE_ROLE_KEY")!,
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token!);
     if (!user) throw new Error("Unauthorized");

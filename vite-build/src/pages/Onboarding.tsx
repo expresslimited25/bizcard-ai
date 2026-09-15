@@ -464,7 +464,7 @@ function StepAi({ ai, setAi, generating, onGenerate, businessName }: { ai:AiCont
           <div>
             <p className="mb-3 text-sm font-semibold">Services</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              {ai.services.map((s,i) => (
+              {(ai.services ?? []).map((s,i) => (
                 <div key={i} className="rounded-xl border bg-card p-4">
                   <input className={`${inputCls} mb-2 font-semibold`} value={s.title} onChange={e => { const n=[...ai.services]; n[i]={...s,title:e.target.value}; setAi({...ai,services:n}); }} />
                   <textarea className={textareaCls} rows={2} value={s.description} onChange={e => { const n=[...ai.services]; n[i]={...s,description:e.target.value}; setAi({...ai,services:n}); }} />

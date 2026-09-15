@@ -42,14 +42,19 @@ export async function fetchProfile(userId: string): Promise<Profile|null> {
 
 export async function fetchMyBusiness(userId: string) {
   try {
-    const { data: business, error } = await supabase.from("businesses").select("*").eq("user_id", userId).maybeSingle();
-    if (error) return { business: null, socials: [], booking: null };
-    if (!business) return { business: null, socials: [], booking: null };
-    const [{ data: socials }, { data: booking }] = await Promise.all([
+    const { data: business, error } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !business) return { business: null, socials: [], booking: null };
+    const [socialsRes, bookingRes] = await Promise.allSettled([
       supabase.from("social_links").select("*").eq("business_id", business.id),
       supabase.from("booking_settings").select("*").eq("business_id", business.id).maybeSingle(),
     ]);
-    return { business: business as Business, socials: (socials ?? []) as SocialLink[], booking: booking as BookingSettings|null };
+    const socials = socialsRes.status === "fulfilled" ? (socialsRes.value.data ?? []) : [];
+    const booking = bookingRes.status === "fulfilled" ? bookingRes.value.data : null;
+    return { business: business as Business, socials: socials as SocialLink[], booking: booking as BookingSettings|null };
   } catch {
     return { business: null, socials: [], booking: null };
   }

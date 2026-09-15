@@ -261,7 +261,7 @@ function StepIdentity({ form, set }: { form:Form; set:SetFn }) {
       </Field>
       <Field label="Category">
         <select className={inputCls} value={form.category} onChange={e => set("category", e.target.value)}>
-          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          {(CATEGORIES || []).map(c => <option key={c}>{c}</option>)}
         </select>
       </Field>
       <Field label="Short description" hint={`${form.short_desc.length}/300`}>
@@ -329,7 +329,7 @@ function StepLinks({ form, set }: { form:Form; set:SetFn }) {
       <div className="pt-2">
         <p className="mb-3 text-sm font-semibold">Social media (all optional)</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          {SOCIAL_PLATFORMS.map(p => (
+          {(SOCIAL_PLATFORMS || []).map(p => (
             <Field key={p.key} label={p.label}>
               <input className={inputCls} value={form.socials[p.key]??""} placeholder={p.placeholder}
                 onChange={e => set("socials", { ...form.socials, [p.key]:e.target.value })} />
@@ -347,7 +347,7 @@ function StepColors({ form, set }: { form:Form; set:SetFn }) {
       <div>
         <p className="mb-3 text-sm font-semibold">Quick palettes</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {PRESET_PALETTES.map(p => {
+          {(PRESET_PALETTES || []).map(p => {
             const active = p.primary===form.color_primary && p.accent===form.color_accent;
             return (
               <button key={p.name} type="button" onClick={() => { set("color_primary",p.primary); set("color_accent",p.accent); }}
@@ -412,7 +412,7 @@ function StepBooking({ form, set }: { form:Form; set:SetFn }) {
           </Field>
           <Field label="Available days">
             <div className="flex flex-wrap gap-2">
-              {DAYS.map(d => { const on=form.available_days.includes(d);
+              {(DAYS || []).map(d => { const on=form.available_days.includes(d);
                 return <button key={d} type="button" onClick={() => set("available_days", on?form.available_days.filter(x=>x!==d):[...form.available_days,d])}
                   className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${on?"bg-primary text-white":"bg-card text-muted-foreground"}`}>{d}</button>; })}
             </div>

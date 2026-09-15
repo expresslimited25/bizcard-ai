@@ -9,11 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { generateBusinessCopy } from "@/lib/ai";
 import { fetchMyBusiness, isSlugAvailable, uploadMedia, getPublicUrl } from "@/lib/queries";
-import { CATEGORIES, DAYS, PRESET_PALETTES, SOCIAL_PLATFORMS, buildTimeSlots, hexToRgba, readableOn, slugify, type AiContent } from "@/lib/bizcard";
-const _SOCIAL_PLATFORMS = SOCIAL_PLATFORMS ?? [];
-const _DAYS = DAYS ?? [];
-const _CATEGORIES = CATEGORIES ?? [];
-const _PRESET_PALETTES = PRESET_PALETTES ?? [];
+import { CATEGORIES as _CAT, DAYS as _DAYS, PRESET_PALETTES as _PAL, SOCIAL_PLATFORMS as _SOC, buildTimeSlots, hexToRgba, readableOn, slugify, type AiContent } from "@/lib/bizcard";
+
+const CATEGORIES = Array.isArray(_CAT) ? [..._CAT] : ["Restaurant","Retail","Beauty & Wellness","Professional Services","Creative","Health","Education","Other"];
+const DAYS = Array.isArray(_DAYS) ? [..._DAYS] : ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const PRESET_PALETTES = Array.isArray(_PAL) ? [..._PAL] : [{name:"Ocean Blue",primary:"#2563eb",accent:"#38bdf8"}];
+const SOCIAL_PLATFORMS = Array.isArray(_SOC) ? [..._SOC] : [{key:"instagram",label:"Instagram",placeholder:"https://instagram.com/yourbrand"},{key:"facebook",label:"Facebook",placeholder:"https://facebook.com/yourbrand"},{key:"tiktok",label:"TikTok",placeholder:"https://tiktok.com/@yourbrand"},{key:"linkedin",label:"LinkedIn",placeholder:"https://linkedin.com/company/yourbrand"},{key:"x",label:"X / Twitter",placeholder:"https://x.com/yourbrand"},{key:"whatsapp",label:"WhatsApp",placeholder:"https://wa.me/15551234567"},{key:"youtube",label:"YouTube",placeholder:"https://youtube.com/@yourbrand"}];
 
 type Form = {
   id:string|null; name:string; slug:string; category:string; short_desc:string; long_desc:string;

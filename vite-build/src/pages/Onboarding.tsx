@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { HexColorPicker } from "react-colorful";
-import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, Loader2, Share2, Sparkles, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, ImagePlus, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,10 +11,18 @@ import { generateBusinessCopy } from "@/lib/ai";
 import { fetchMyBusiness, isSlugAvailable, uploadMedia, getPublicUrl } from "@/lib/queries";
 import { CATEGORIES as _CAT, DAYS as _DAYS, PRESET_PALETTES as _PAL, SOCIAL_PLATFORMS as _SOC, buildTimeSlots, hexToRgba, readableOn, slugify, type AiContent } from "@/lib/bizcard";
 
-const CATEGORIES = Array.isArray(_CAT) ? [..._CAT] : ["Restaurant","Retail","Beauty & Wellness","Professional Services","Creative","Health","Education","Other"];
-const DAYS = Array.isArray(_DAYS) ? [..._DAYS] : ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const PRESET_PALETTES = Array.isArray(_PAL) ? [..._PAL] : [{name:"Ocean Blue",primary:"#2563eb",accent:"#38bdf8"}];
-const SOCIAL_PLATFORMS = Array.isArray(_SOC) ? [..._SOC] : [{key:"instagram",label:"Instagram",placeholder:"https://instagram.com/yourbrand"},{key:"facebook",label:"Facebook",placeholder:"https://facebook.com/yourbrand"},{key:"tiktok",label:"TikTok",placeholder:"https://tiktok.com/@yourbrand"},{key:"linkedin",label:"LinkedIn",placeholder:"https://linkedin.com/company/yourbrand"},{key:"x",label:"X / Twitter",placeholder:"https://x.com/yourbrand"},{key:"whatsapp",label:"WhatsApp",placeholder:"https://wa.me/15551234567"},{key:"youtube",label:"YouTube",placeholder:"https://youtube.com/@yourbrand"}];
+const CATEGORIES = Array.isArray(_CAT) ? _CAT : ["Restaurant","Retail","Beauty & Wellness","Professional Services","Creative","Health","Education","Other"];
+const DAYS = Array.isArray(_DAYS) ? _DAYS : ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const PRESET_PALETTES = Array.isArray(_PAL) ? _PAL : [{name:"Ocean Blue",primary:"#2563eb",accent:"#38bdf8"}];
+const SOCIAL_PLATFORMS = Array.isArray(_SOC) ? _SOC : [
+  {key:"instagram",label:"Instagram",placeholder:"https://instagram.com/yourbrand"},
+  {key:"facebook",label:"Facebook",placeholder:"https://facebook.com/yourbrand"},
+  {key:"tiktok",label:"TikTok",placeholder:"https://tiktok.com/@yourbrand"},
+  {key:"linkedin",label:"LinkedIn",placeholder:"https://linkedin.com/company/yourbrand"},
+  {key:"x",label:"X / Twitter",placeholder:"https://x.com/yourbrand"},
+  {key:"whatsapp",label:"WhatsApp",placeholder:"https://wa.me/15551234567"},
+  {key:"youtube",label:"YouTube",placeholder:"https://youtube.com/@yourbrand"},
+];
 
 type Form = {
   id:string|null; name:string; slug:string; category:string; short_desc:string; long_desc:string;
@@ -37,6 +45,12 @@ const EMPTY: Form = {
 
 const STEPS = ["Business identity","Media","Links & contact","Colour palette","Booking settings","AI generation","Publish"];
 
+const TEMPLATES = [
+  { id:"professional", label:"Professional & Corporate", hint:"Clean, authoritative tone for B2B and consultancy", keywords:"professional, authoritative, corporate, expert, results-driven, precise" },
+  { id:"warm", label:"Warm & Community-Focused", hint:"Friendly, personal tone for local businesses", keywords:"warm, friendly, welcoming, community, personal touch, local, family" },
+  { id:"bold", label:"Bold & Innovative", hint:"Energetic, forward-thinking tone for startups and tech", keywords:"bold, innovative, energetic, disruptive, modern, cutting-edge, growth" },
+];
+
 export default function Onboarding() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
@@ -46,6 +60,8 @@ export default function Onboarding() {
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [published, setPublished] = useState(false);
+  const [extraDetails, setExtraDetails] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm(f => ({ ...f, [key]: value }));
 
@@ -85,10 +101,22 @@ export default function Onboarding() {
   const runGeneration = async () => {
     setGenerating(true);
     try {
-      const result = await generateBusinessCopy({ name:form.name, category:form.category, shortDesc:form.short_desc, longDesc:form.long_desc, website:form.website });
-      setAi(result); toast.success("Your page copy is ready");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "AI generation failed"); }
-    finally { setGenerating(false); }
+      const templateKeywords = TEMPLATES.find(t => t.id === selectedTemplate)?.keywords ?? "";
+      const combinedDesc = [form.short_desc, form.long_desc, extraDetails, templateKeywords].filter(Boolean).join(". ");
+      const result = await generateBusinessCopy({
+        name: form.name,
+        category: form.category,
+        shortDesc: combinedDesc,
+        longDesc: "",
+        website: form.website,
+      });
+      setAi(result);
+      toast.success("Your page copy is ready!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI generation failed. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const publish = async () => {
@@ -110,27 +138,35 @@ export default function Onboarding() {
       };
 
       let businessId = form.id;
-      if (businessId) { const { error } = await supabase.from("businesses").update(payload).eq("id", businessId); if (error) throw error; }
-      else { const { data, error } = await supabase.from("businesses").insert(payload).select("id").single(); if (error) throw error; businessId = data.id; }
+      if (businessId) {
+        const { error } = await supabase.from("businesses").update(payload).eq("id", businessId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("businesses").insert(payload).select("id").single();
+        if (error) throw error;
+        businessId = data.id;
+      }
 
       await supabase.from("social_links").delete().eq("business_id", businessId);
       const socialRows = Object.entries(form.socials).filter(([,url]) => url?.trim().length>3).map(([platform,url]) => ({ business_id:businessId!, platform, url:url.trim() }));
       if (socialRows.length) await supabase.from("social_links").insert(socialRows);
 
-      const { error: bsErr } = await supabase.from("booking_settings").upsert({
+      await supabase.from("booking_settings").upsert({
         business_id:businessId, enabled:form.bookingEnabled, booking_type:form.booking_type,
         available_days:form.available_days, start_time:form.start_time, end_time:form.end_time,
         slot_duration_mins:form.slot_duration_mins, max_capacity:form.max_capacity,
         collect_name:form.collect_name, collect_phone:form.collect_phone, collect_notes:form.collect_notes,
       }, { onConflict:"business_id" });
-      if (bsErr) throw bsErr;
 
       setForm(f => ({ ...f, id:businessId, slug }));
       setPublished(true);
       confetti({ particleCount:160, spread:80, origin:{ y:0.35 } });
       setTimeout(() => confetti({ particleCount:90, spread:110, origin:{ y:0.4 } }), 260);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not publish your page"); }
-    finally { setPublishing(false); }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not publish your page");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   if (loading) return <div className="grid min-h-screen place-items-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
@@ -197,7 +233,10 @@ export default function Onboarding() {
                 {step===2 && <StepLinks form={form} set={set} />}
                 {step===3 && <StepColors form={form} set={set} />}
                 {step===4 && <StepBooking form={form} set={set} />}
-                {step===5 && <StepAi ai={ai} setAi={setAi} generating={generating} onGenerate={() => void runGeneration()} businessName={form.name} />}
+                {step===5 && <StepAi ai={ai} setAi={setAi} generating={generating}
+                  onGenerate={() => void runGeneration()} businessName={form.name}
+                  extraDetails={extraDetails} setExtraDetails={setExtraDetails}
+                  selectedTemplate={selectedTemplate} setSelectedTemplate={setSelectedTemplate} />}
                 {step===6 && <StepPreview form={form} ai={ai} />}
               </>
             )}
@@ -254,14 +293,14 @@ function StepIdentity({ form, set }: { form:Form; set:SetFn }) {
       </Field>
       <Field label="Public link">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">bizcard.ai/</span>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">{window.location.origin}/</span>
           <input className={inputCls} value={form.slug} placeholder="aurora-coffee"
             onChange={e => set("slug", slugify(e.target.value))} />
         </div>
       </Field>
       <Field label="Category">
         <select className={inputCls} value={form.category} onChange={e => set("category", e.target.value)}>
-          {(CATEGORIES || []).map(c => <option key={c}>{c}</option>)}
+          {(CATEGORIES||[]).map(c => <option key={c}>{c}</option>)}
         </select>
       </Field>
       <Field label="Short description" hint={`${form.short_desc.length}/300`}>
@@ -329,7 +368,7 @@ function StepLinks({ form, set }: { form:Form; set:SetFn }) {
       <div className="pt-2">
         <p className="mb-3 text-sm font-semibold">Social media (all optional)</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          {(SOCIAL_PLATFORMS || []).map(p => (
+          {(SOCIAL_PLATFORMS||[]).map(p => (
             <Field key={p.key} label={p.label}>
               <input className={inputCls} value={form.socials[p.key]??""} placeholder={p.placeholder}
                 onChange={e => set("socials", { ...form.socials, [p.key]:e.target.value })} />
@@ -347,7 +386,7 @@ function StepColors({ form, set }: { form:Form; set:SetFn }) {
       <div>
         <p className="mb-3 text-sm font-semibold">Quick palettes</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {(PRESET_PALETTES || []).map(p => {
+          {(PRESET_PALETTES||[]).map(p => {
             const active = p.primary===form.color_primary && p.accent===form.color_accent;
             return (
               <button key={p.name} type="button" onClick={() => { set("color_primary",p.primary); set("color_accent",p.accent); }}
@@ -395,7 +434,7 @@ function StepBooking({ form, set }: { form:Form; set:SetFn }) {
         </div>
         <button type="button" onClick={() => set("bookingEnabled",!form.bookingEnabled)}
           className={`relative h-6 w-10 rounded-full transition ${form.bookingEnabled?"bg-primary":"bg-muted-foreground/30"}`}>
-          <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition ${form.bookingEnabled?"left-4.5":"left-0.5"}`} style={{ left:form.bookingEnabled?'calc(100% - 22px)':'2px' }} />
+          <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition`} style={{ left:form.bookingEnabled?"calc(100% - 22px)":"2px" }} />
         </button>
       </div>
       {form.bookingEnabled && (
@@ -412,7 +451,7 @@ function StepBooking({ form, set }: { form:Form; set:SetFn }) {
           </Field>
           <Field label="Available days">
             <div className="flex flex-wrap gap-2">
-              {(DAYS || []).map(d => { const on=form.available_days.includes(d);
+              {(DAYS||[]).map(d => { const on=form.available_days.includes(d);
                 return <button key={d} type="button" onClick={() => set("available_days", on?form.available_days.filter(x=>x!==d):[...form.available_days,d])}
                   className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${on?"bg-primary text-white":"bg-card text-muted-foreground"}`}>{d}</button>; })}
             </div>
@@ -433,48 +472,113 @@ function StepBooking({ form, set }: { form:Form; set:SetFn }) {
   );
 }
 
-function StepAi({ ai, setAi, generating, onGenerate, businessName }: { ai:AiContent|null; setAi:(v:AiContent)=>void; generating:boolean; onGenerate:()=>void; businessName:string }) {
+function StepAi({ ai, setAi, generating, onGenerate, businessName, extraDetails, setExtraDetails, selectedTemplate, setSelectedTemplate }: {
+  ai:AiContent|null; setAi:(v:AiContent)=>void; generating:boolean; onGenerate:()=>void; businessName:string;
+  extraDetails:string; setExtraDetails:(v:string)=>void; selectedTemplate:string; setSelectedTemplate:(v:string)=>void;
+}) {
   return (
     <div className="space-y-6">
-      {!ai && !generating && (
-        <div className="py-8 text-center">
-          <div className="bg-brand-gradient mx-auto grid size-16 place-items-center rounded-2xl text-white"><Wand2 className="size-7" /></div>
-          <h2 className="mt-5 text-xl font-extrabold">Let AI write your page</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">We'll craft a headline, tagline, bio and services for {businessName||"your business"}.</p>
-          <button onClick={onGenerate} className="hover-lift shadow-glow mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white">
-            <Sparkles className="size-4" /> Generate My Business Page
-          </button>
-        </div>
-      )}
-      {generating && (
-        <div className="py-16 text-center">
-          <motion.div animate={{ rotate:360 }} transition={{ duration:2.4, repeat:Infinity, ease:"linear" }}
-            className="bg-brand-gradient mx-auto grid size-16 place-items-center rounded-2xl text-white"><Sparkles className="size-7" /></motion.div>
-          <p className="mt-6 font-semibold">AI is building your page...</p>
-          <div className="mx-auto mt-4 h-1.5 w-52 overflow-hidden rounded-full bg-muted">
-            <motion.div className="bg-brand-gradient h-full w-1/3" animate={{ x:["-100%","300%"] }} transition={{ duration:1.5, repeat:Infinity, ease:"easeInOut" }} />
-          </div>
-        </div>
-      )}
-      {ai && !generating && (
+      {!generating && (
         <div className="space-y-5">
-          <Field label="Hero headline"><input className={inputCls} value={ai.headline} onChange={e => setAi({ ...ai, headline:e.target.value })} /></Field>
-          <Field label="Tagline"><input className={inputCls} value={ai.tagline} onChange={e => setAi({ ...ai, tagline:e.target.value })} /></Field>
-          <Field label="Business bio"><textarea className={textareaCls} rows={6} value={ai.bio} onChange={e => setAi({ ...ai, bio:e.target.value })} /></Field>
+          {/* Tone templates */}
           <div>
-            <p className="mb-3 text-sm font-semibold">Services</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(ai.services ?? []).map((s,i) => (
-                <div key={i} className="rounded-xl border bg-card p-4">
-                  <input className={`${inputCls} mb-2 font-semibold`} value={s.title} onChange={e => { const n=[...ai.services]; n[i]={...s,title:e.target.value}; setAi({...ai,services:n}); }} />
-                  <textarea className={textareaCls} rows={2} value={s.description} onChange={e => { const n=[...ai.services]; n[i]={...s,description:e.target.value}; setAi({...ai,services:n}); }} />
-                </div>
+            <p className="mb-2 text-sm font-semibold">Choose a tone <span className="font-normal text-muted-foreground">(optional)</span></p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {TEMPLATES.map(t => (
+                <button key={t.id} type="button"
+                  onClick={() => setSelectedTemplate(selectedTemplate===t.id ? "" : t.id)}
+                  className={`rounded-xl border p-3 text-left transition ${selectedTemplate===t.id ? "border-primary bg-primary/5 shadow-glow" : "bg-card hover:border-primary/40"}`}>
+                  <p className="text-sm font-bold">{t.label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t.hint}</p>
+                  {selectedTemplate===t.id && (
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                      <Check className="size-3" /> Selected
+                    </span>
+                  )}
+                </button>
               ))}
             </div>
           </div>
-          <button onClick={onGenerate} className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-muted">
-            <Wand2 className="size-4" /> Regenerate
-          </button>
+
+          {/* Key details */}
+          <div>
+            <label className="mb-1 block text-sm font-semibold">
+              Key details about your business{" "}
+              <span className="font-normal text-muted-foreground">(optional — max 200 characters)</span>
+            </label>
+            <textarea
+              className={textareaCls} rows={3} maxLength={200}
+              placeholder="e.g. Founded in 2018, award-winning customer service, specialise in eco-friendly products, serve clients across Southeast Asia..."
+              value={extraDetails}
+              onChange={e => setExtraDetails(e.target.value)}
+            />
+            <p className="mt-1 text-right text-xs text-muted-foreground">{extraDetails.length}/200</p>
+          </div>
+
+          {!ai ? (
+            <div className="rounded-2xl bg-muted/40 p-6 text-center">
+              <div className="bg-brand-gradient mx-auto grid size-14 place-items-center rounded-2xl text-white">
+                <Wand2 className="size-6" />
+              </div>
+              <h2 className="mt-4 text-lg font-extrabold">Ready to generate for {businessName||"your business"}</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                AI writes your headline, tagline, bio and 4 services. You can edit everything before publishing.
+              </p>
+              <button onClick={onGenerate}
+                className="hover-lift shadow-glow mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white">
+                <Sparkles className="size-4" /> Generate My Business Page
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-green-600">
+                  <Check className="size-4" /> Generated — edit anything below before continuing
+                </p>
+                <button onClick={onGenerate}
+                  className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                  <Wand2 className="size-3.5" /> Regenerate
+                </button>
+              </div>
+              <Field label="Hero headline">
+                <input className={inputCls} value={ai.headline} onChange={e => setAi({ ...ai, headline:e.target.value })} />
+              </Field>
+              <Field label="Tagline">
+                <input className={inputCls} value={ai.tagline} onChange={e => setAi({ ...ai, tagline:e.target.value })} />
+              </Field>
+              <Field label="Business bio">
+                <textarea className={textareaCls} rows={6} value={ai.bio} onChange={e => setAi({ ...ai, bio:e.target.value })} />
+              </Field>
+              <div>
+                <p className="mb-3 text-sm font-semibold">Services — click any field to edit</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(ai.services??[]).map((s,i) => (
+                    <div key={i} className="space-y-2 rounded-xl border bg-card p-4">
+                      <input className={`${inputCls} font-semibold`} value={s.title} placeholder="Service title"
+                        onChange={e => { const n=[...ai.services]; n[i]={...s,title:e.target.value}; setAi({...ai,services:n}); }} />
+                      <textarea className={textareaCls} rows={2} value={s.description} placeholder="Service description"
+                        onChange={e => { const n=[...ai.services]; n[i]={...s,description:e.target.value}; setAi({...ai,services:n}); }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {generating && (
+        <div className="py-16 text-center">
+          <motion.div animate={{ rotate:360 }} transition={{ duration:2.4, repeat:Infinity, ease:"linear" }}
+            className="bg-brand-gradient mx-auto grid size-16 place-items-center rounded-2xl text-white">
+            <Sparkles className="size-7" />
+          </motion.div>
+          <p className="mt-6 font-semibold">AI is writing your page...</p>
+          <p className="mt-1 text-sm text-muted-foreground">This takes about 10 seconds</p>
+          <div className="mx-auto mt-4 h-1.5 w-52 overflow-hidden rounded-full bg-muted">
+            <motion.div className="bg-brand-gradient h-full w-1/3"
+              animate={{ x:["-100%","300%"] }} transition={{ duration:1.5, repeat:Infinity, ease:"easeInOut" }} />
+          </div>
         </div>
       )}
     </div>
@@ -486,10 +590,15 @@ function StepPreview({ form, ai }: { form:Form; ai:AiContent|null }) {
   const logo = form.logo_url ? getPublicUrl(form.logo_url) : null;
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">This is how your page opens. Publish to make it live at bizcard.ai/{form.slug}.</p>
-      <div className="shadow-elevated overflow-hidden rounded-2xl border">
+      <p className="text-sm text-muted-foreground">
+        This is how your page opens. Publish to make it live at{" "}
+        <span className="font-mono text-primary">{window.location.origin}/{form.slug}</span>
+      </p>
+      <div className="overflow-hidden rounded-2xl border shadow-elevated">
         <div className="relative flex min-h-56 flex-col justify-end p-6" style={{
-          background: cover ? `linear-gradient(0deg,${hexToRgba(form.color_primary,0.85)},${hexToRgba(form.color_accent,0.45)}),url(${cover}) center/cover` : `linear-gradient(135deg,${form.color_primary},${form.color_accent})`,
+          background: cover
+            ? `linear-gradient(0deg,${hexToRgba(form.color_primary,0.85)},${hexToRgba(form.color_accent,0.45)}),url(${cover}) center/cover`
+            : `linear-gradient(135deg,${form.color_primary},${form.color_accent})`,
           color: readableOn(form.color_primary),
         }}>
           {logo && <img src={logo} alt="Logo" className="mb-3 size-14 rounded-2xl border-2 border-white/60 object-cover" />}
@@ -497,7 +606,7 @@ function StepPreview({ form, ai }: { form:Form; ai:AiContent|null }) {
           <p className="mt-1 text-sm opacity-90">{ai?.tagline||form.short_desc}</p>
         </div>
         <div className="space-y-3 bg-card p-6">
-          <p className="whitespace-pre-line text-sm text-muted-foreground">{ai?.bio||form.long_desc||form.short_desc}</p>
+          <p className="whitespace-pre-line text-sm text-muted-foreground line-clamp-4">{ai?.bio||form.long_desc||form.short_desc}</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {(ai?.services??[]).map(s => (
               <div key={s.title} className="rounded-xl border p-3">

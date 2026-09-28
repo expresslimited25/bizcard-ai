@@ -180,13 +180,38 @@ export default function Dashboard() {
                   <h2 className="text-lg font-extrabold">Your public page</h2>
                   <p className="mt-1 break-all font-mono text-xs text-primary">{publicUrl}</p>
                   <div className="mt-4 flex justify-center">
-                    <QRCodeSVG value={publicUrl} size={160} fgColor={business.color_primary} />
+                    <div id="qr-code-svg">
+  <QRCodeSVG value={publicUrl} size={160} fgColor={business.color_primary} />
+</div>
                   </div>
                   <div className="mt-5 grid gap-2">
                     <button onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copied"); }}
-                      className="flex items-center justify-center gap-2 rounded-xl border py-2 text-sm font-semibold hover:bg-muted">
-                      <Copy className="size-4" /> Copy link
-                    </button>
+  className="flex items-center justify-center gap-2 rounded-xl border py-2 text-sm font-semibold hover:bg-muted">
+  <Copy className="size-4" /> Copy link
+</button>
+<button onClick={() => {
+  const svg = document.querySelector("#qr-code-svg svg") as SVGElement;
+  if (!svg) return;
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(`<!DOCTYPE html><html><head><title>${business.name} QR Code</title><style>
+    body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#fff;}
+    svg{width:280px;height:280px;}
+    p{margin-top:16px;font-size:14px;color:#6b7280;}
+    h2{margin:0 0 8px;font-size:18px;font-weight:700;}
+    @media print{button{display:none}}
+    button{margin-top:20px;padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;}
+  </style></head><body>
+    <h2>${business.name}</h2>
+    ${svgData}
+    <p>${publicUrl}</p>
+    <button onclick="window.print()">Print</button>
+  </body></html>`);
+  win.document.close();
+}} className="flex items-center justify-center gap-2 rounded-xl border py-2 text-sm font-semibold hover:bg-muted">
+  🖨️ Print QR code
+</button>
                     <a href={publicUrl} target="_blank" rel="noreferrer"
                       className="flex items-center justify-center gap-2 rounded-xl bg-primary py-2 text-sm font-semibold text-white shadow-glow">
                       <ExternalLink className="size-4" /> View live page

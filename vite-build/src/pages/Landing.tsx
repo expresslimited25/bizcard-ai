@@ -224,6 +224,10 @@ export default function Landing() {
       <footer className="border-t px-4 py-10 text-center text-sm text-muted-foreground">
         <p className="font-semibold text-foreground">BizCard AI</p>
         <p className="mt-1">Your Business. One Link. Infinite First Impressions.</p>
+        <p className="mt-3 flex justify-center gap-4">
+  <a href="/privacy" className="font-semibold text-foreground underline underline-offset-2">Privacy policy</a>
+  <a href="/support" className="font-semibold text-foreground underline underline-offset-2">Contact support</a>
+</p>
       </footer>
     </div>
   );

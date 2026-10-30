@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
+import Privacy from "@/pages/Privacy";
+import Support from "@/pages/Support";
 import PublicPage from "@/pages/PublicPage";
 import { Loader2 } from "lucide-react";
 
@@ -28,6 +30,8 @@ export default function App() {
   if (path === "/auth") return <Auth />;
   if (path === "/dashboard") return <ProtectedRoute><Dashboard /></ProtectedRoute>;
   if (path === "/onboarding") return <ProtectedRoute><Onboarding /></ProtectedRoute>;
+  if (path === "/privacy") return <Privacy />;
+  if (path === "/support") return <Support />;
   const slug = path.replace(/^\//, "").split("/")[0];
   if (slug) return <PublicPage slug={slug} />;
   return <Landing />;

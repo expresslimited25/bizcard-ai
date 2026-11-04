@@ -4,11 +4,11 @@ import { ArrowLeft } from "lucide-react";
 // ---------------------------------------------------------------------------
 // EDIT THESE FOUR VALUES FIRST. They appear throughout the policy.
 // ---------------------------------------------------------------------------
-const COMPANY = "[Express Limited]";
-const CONTACT_EMAIL = "[expresslimited25@gmail.com]";
-const ADDRESS = "[Shah Alam, Selangor]";
-const LAST_UPDATED = "[30 October 2026]";
-const MIN_AGE = "21";
+const COMPANY = "[Your legal entity name]";
+const CONTACT_EMAIL = "[privacy@your-domain.com]";
+const ADDRESS = "[Registered business address]";
+const LAST_UPDATED = "[Date]";
+const MIN_AGE = "18";
 // ---------------------------------------------------------------------------
 
 type Section = { title: string; paragraphs?: string[]; bullets?: string[]; after?: string[] };

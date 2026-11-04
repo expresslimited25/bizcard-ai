@@ -12,7 +12,7 @@ const GOVERNING_LAW = "[Malaysia]";
 const COURTS = "[TBD]";
 const MIN_AGE = "21";
 const REFUND_POLICY =
-  "[Payments are non-refundable except where the law requires otherwise. Edit this sentence to match your refund policy.]";
+  "[Payments are non-refundable except where the law requires otherwise.]";
 // ---------------------------------------------------------------------------
 
 type Section = { title: string; paragraphs?: string[]; bullets?: string[]; after?: string[] };

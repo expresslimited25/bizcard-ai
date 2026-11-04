@@ -7,6 +7,7 @@ import Privacy from "@/pages/Privacy";
 import Support from "@/pages/Support";
 import PublicPage from "@/pages/PublicPage";
 import { Loader2 } from "lucide-react";
+import Terms from "@/pages/Terms";
 
 const Onboarding = () => {
   const [Component, setComponent] = useState<React.ComponentType | null>(null);
@@ -32,6 +33,7 @@ export default function App() {
   if (path === "/onboarding") return <ProtectedRoute><Onboarding /></ProtectedRoute>;
   if (path === "/privacy") return <Privacy />;
   if (path === "/support") return <Support />;
+  if (path === "/terms") return <Terms />;
   const slug = path.replace(/^\//, "").split("/")[0];
   if (slug) return <PublicPage slug={slug} />;
   return <Landing />;

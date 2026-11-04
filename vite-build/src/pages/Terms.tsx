@@ -4,13 +4,13 @@ import { ArrowLeft } from "lucide-react";
 // ---------------------------------------------------------------------------
 // EDIT THESE VALUES FIRST. They appear throughout the terms.
 // ---------------------------------------------------------------------------
-const COMPANY = "[Your legal entity name]";
-const CONTACT_EMAIL = "[support@your-domain.com]";
-const ADDRESS = "[Registered business address]";
-const LAST_UPDATED = "[Date]";
-const GOVERNING_LAW = "[Country or state whose laws apply]";
-const COURTS = "[City or country whose courts will hear disputes]";
-const MIN_AGE = "18";
+const COMPANY = "[Express Limited]";
+const CONTACT_EMAIL = "[expresslimited25@gmail.com]";
+const ADDRESS = "[Selangor,Malaysia]";
+const LAST_UPDATED = "[4th November 2026]";
+const GOVERNING_LAW = "[Malaysia]";
+const COURTS = "[TBD]";
+const MIN_AGE = "21";
 const REFUND_POLICY =
   "[Payments are non-refundable except where the law requires otherwise. Edit this sentence to match your refund policy.]";
 // ---------------------------------------------------------------------------

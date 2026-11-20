@@ -173,7 +173,7 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl">
           <SectionHeading eyebrow="Pricing" title="Start free. Upgrade when it pays for itself."
             body="One month free with no credit card. Then pick the billing period that suits you." />
-          <div className="mx-auto mt-12 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto mt-12 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {PLANS.map((p, i) => (
               <motion.div key={p.id} initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
                 transition={{ duration:0.5, delay:i*0.07 }}

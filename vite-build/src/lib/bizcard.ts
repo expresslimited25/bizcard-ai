@@ -29,20 +29,49 @@ const PRO_PERKS = [
   "Page view analytics","Video embeds","Priority support",
 ] as const;
 
-export const PLANS = [
-  { id:"trial", name:"Free Trial", price:"$0", period:"for 1 month", note:"No credit card required",
-    perks:["Full AI page builder","Public business page","Booking inbox","QR code sharing"], highlight:false },
-  { id:"monthly", name:"Pro Monthly", price:"$10", period:"per month", note:"Cancel anytime", perks:PRO_PERKS, highlight:false },
-  { id:"quarterly", name:"Pro Quarterly", price:"$19", period:"every 3 months", note:"Save 37% vs monthly", perks:PRO_PERKS, highlight:true },
-  { id:"biannual", name:"Pro 6 Months", price:"$39", period:"every 6 months", note:"Save 35% vs monthly", perks:PRO_PERKS, highlight:false },
-  { id:"yearly", name:"Pro Yearly", price:"$69", period:"per year", note:"Best value — save 43%", perks:PRO_PERKS, highlight:false },
-] as const;
+// Visitors on Malaysian time see RM; everyone else sees $.
+// Stripe Checkout separately picks the charged currency from the customer's location.
+export function isMalaysiaVisitor(): boolean {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz === "Asia/Kuala_Lumpur" || tz === "Asia/Kuching";
+  } catch { return false; }
+}
 
+export const CURRENCY: "myr" | "usd" = isMalaysiaVisitor() ? "myr" : "usd";
+
+// Must match the Stripe prices (USD default + MYR option)
+const AMOUNTS = {
+  monthly:   { usd: 9.99,  myr: 12.99 },
+  quarterly: { usd: 25.99, myr: 35.99 },
+  yearly:    { usd: 99.99, myr: 109.99 },
+} as const;
+
+export function formatPrice(amount: number, currency = CURRENCY): string {
+  return currency === "myr" ? `RM${amount.toFixed(2)}` : `$${amount.toFixed(2)}`;
+}
+
+function saving(plan: "quarterly" | "yearly", months: number): string {
+  const full = AMOUNTS.monthly[CURRENCY] * months;
+  const pct = Math.round((1 - AMOUNTS[plan][CURRENCY] / full) * 100);
+  return `Save ${pct}% vs monthly`;
+}
+
+export const PLANS = [
+  { id:"trial", name:"Free Trial", price: formatPrice(0).replace(".00",""), period:"for 1 month", note:"No credit card required",
+    perks:["Full AI page builder","Public business page","Booking inbox","QR code sharing"], highlight:false },
+  { id:"monthly", name:"Pro Monthly", price: formatPrice(AMOUNTS.monthly[CURRENCY]), period:"per month", note:"Cancel anytime", perks:PRO_PERKS, highlight:false },
+  { id:"quarterly", name:"Pro Quarterly", price: formatPrice(AMOUNTS.quarterly[CURRENCY]), period:"every 3 months", note: saving("quarterly", 3), perks:PRO_PERKS, highlight:true },
+  { id:"yearly", name:"Pro Yearly", price: formatPrice(AMOUNTS.yearly[CURRENCY]), period:"per year", note:`Best value — ${saving("yearly", 12).toLowerCase()}`, perks:PRO_PERKS, highlight:false },
+];
+
+export const MONTHLY_PRICE_LABEL = `${formatPrice(AMOUNTS.monthly[CURRENCY])}/mo`;
+
+// New Stripe prices (USD default + MYR option). Must match create-checkout.
 export const PRICE_IDS = {
-  monthly: "price_1UBmRfAN138436M6yp2CBaNB",
-  quarterly: "price_1UC9XQAN138436M67LLkMJR5",
-  biannual: "price_1UC9Y6AN138436M6v0RvyAcH",
-  yearly: "price_1UC9YrAN138436M6EG5fN0ck",
+  monthly: "PRICE_ID_MONTHLY",
+  quarterly: "PRICE_ID_QUARTERLY",
+  yearly: "PRICE_ID_YEARLY",
 } as const;
 
 export type PlanId = keyof typeof PRICE_IDS;

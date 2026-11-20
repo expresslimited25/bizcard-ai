@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
     title: "Free trial and subscriptions",
     paragraphs: [
       "New accounts start with a free trial of 30 days. No payment card is needed to start the trial. When the trial ends, some features may become unavailable until you subscribe.",
-      "Paid plans are billed in advance for the period you choose. At the time of writing, the plans are monthly, every 3 months, every 6 months and yearly. Current prices are shown on our website before you pay.",
+      "Paid plans are billed in advance for the period you choose. At the time of writing, the plans are monthly, every 3 months and yearly. Customers in Malaysia are charged in Malaysian Ringgit (MYR); other customers are charged in US Dollars (USD). Current prices are shown on our website before you pay.",
       "Payments are processed by Stripe. Your subscription renews automatically at the end of each billing period until you cancel. You can cancel at any time from the Manage billing option in your dashboard, and you will keep access until the end of the period you have already paid for.",
       REFUND_POLICY,
       "We may change our prices. If we do, the new price applies from your next renewal and we will tell you in advance. You are responsible for any taxes that apply to your purchase.",

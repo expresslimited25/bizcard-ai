@@ -7,11 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// New prices (USD default + MYR option). Stripe picks the currency from the customer's location.
 const PRICE_IDS: Record<string, string> = {
-  monthly: "price_1UBmRfAN138436M6yp2CBaNB",
-  quarterly: "price_1UC9XQAN138436M67LLkMJR5",
-  biannual: "price_1UC9Y6AN138436M6v0RvyAcH",
-  yearly: "price_1UC9YrAN138436M6EG5fN0ck",
+  monthly: "PRICE_ID_MONTHLY",
+  quarterly: "PRICE_ID_QUARTERLY",
+  yearly: "PRICE_ID_YEARLY",
 };
 
 serve(async (req) => {
@@ -21,7 +21,10 @@ serve(async (req) => {
     const { plan, origin } = await req.json();
     const priceId = PRICE_IDS[plan] ?? PRICE_IDS.monthly;
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SB_SERVICE_ROLE_KEY")!,
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SB_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
     const { data: { user } } = await supabase.auth.getUser(token!);
     if (!user) throw new Error("Unauthorized");

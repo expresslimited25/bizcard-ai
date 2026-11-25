@@ -9,9 +9,9 @@ const corsHeaders = {
 
 // New prices (USD default + MYR option). Stripe picks the currency from the customer's location.
 const PRICE_IDS: Record<string, string> = {
-  monthly: "PRICE_ID_MONTHLY",
-  quarterly: "PRICE_ID_QUARTERLY",
-  yearly: "PRICE_ID_YEARLY",
+  monthly: "price_1UfaDKAN138436M6mkTRdk7V",
+  quarterly: "price_1UfaE1AN138436M6jcwdh267",
+  yearly: "price_1UfaFKAN138436M6RGmPEBpX",
 };
 
 serve(async (req) => {

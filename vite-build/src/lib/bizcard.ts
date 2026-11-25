@@ -69,9 +69,9 @@ export const MONTHLY_PRICE_LABEL = `${formatPrice(AMOUNTS.monthly[CURRENCY])}/mo
 
 // New Stripe prices (USD default + MYR option). Must match create-checkout.
 export const PRICE_IDS = {
-  monthly: "PRICE_ID_MONTHLY",
-  quarterly: "PRICE_ID_QUARTERLY",
-  yearly: "PRICE_ID_YEARLY",
+  monthly: "price_1UfaDKAN138436M6mkTRdk7V",
+  quarterly: "price_1UfaE1AN138436M6jcwdh267",
+  yearly: "price_1UfaFKAN138436M6RGmPEBpX",
 } as const;
 
 export type PlanId = keyof typeof PRICE_IDS;

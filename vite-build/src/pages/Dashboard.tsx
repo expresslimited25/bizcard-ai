@@ -6,11 +6,13 @@ import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchBookings, fetchMyBusiness, fetchProfile, type Booking, type Business, type Profile } from "@/lib/queries";
-import { MONTHLY_PRICE_LABEL } from "@/lib/bizcard";
+import { monthlyPriceLabel } from "@/lib/bizcard";
+import { useCurrency } from "@/hooks/useCurrency";
 import { checkSubscription, createCheckout, createPortalSession, type BillingState } from "@/lib/billing";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const currency = useCurrency();
   const [profile, setProfile] = useState<Profile|null>(null);
   const [business, setBusiness] = useState<Business|null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -83,7 +85,7 @@ export default function Dashboard() {
             ) : (
               <button onClick={() => void subscribe()} disabled={billingBusy}
                 className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white shadow-glow disabled:opacity-60">
-                <CreditCard className="size-4" /> Upgrade — {MONTHLY_PRICE_LABEL}
+                <CreditCard className="size-4" /> Upgrade — {monthlyPriceLabel(currency)}
               </button>
             )}
             <button onClick={() => void signOut().then(() => window.location.href = "/")}

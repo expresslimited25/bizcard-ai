@@ -23,11 +23,11 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SB_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SB_SERVICE_ROLE_KEY")!
     );
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
-    const { data: { user } } = await supabase.auth.getUser(token!);
-    if (!user) throw new Error("Unauthorized");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token!);
+    if (!user) throw new Error(`Unauthorized${authError ? `: ${authError.message}` : ""}`);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-06-20" });
 

@@ -29,16 +29,28 @@ const PRO_PERKS = [
   "Page view analytics","Video embeds","Priority support",
 ] as const;
 
-// Visitors on Malaysian time see RM; everyone else sees $.
-// Stripe Checkout separately picks the charged currency from the customer's location.
-export function isMalaysiaVisitor(): boolean {
+export type Currency = "myr" | "usd";
+
+// Quick first guess from the browser's time zone. Many Malaysian Windows PCs report
+// "Asia/Singapore" (Windows' "Kuala Lumpur, Singapore" zone), so this is only a fallback.
+export function guessCurrency(): Currency {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return tz === "Asia/Kuala_Lumpur" || tz === "Asia/Kuching";
-  } catch { return false; }
+    return tz === "Asia/Kuala_Lumpur" || tz === "Asia/Kuching" ? "myr" : "usd";
+  } catch { return "usd"; }
 }
 
-export const CURRENCY: "myr" | "usd" = isMalaysiaVisitor() ? "myr" : "usd";
+// Accurate answer: the visitor's country from Vercel (/api/geo). MY = RM, everyone else = $.
+let cached: Promise<Currency> | null = null;
+export function detectCurrency(): Promise<Currency> {
+  if (!cached) {
+    cached = fetch("/api/geo", { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.country ? (d.country === "MY" ? "myr" : "usd") as Currency : guessCurrency())
+      .catch(() => guessCurrency());
+  }
+  return cached;
+}
 
 // Must match the Stripe prices (USD default + MYR option)
 const AMOUNTS = {
@@ -47,25 +59,28 @@ const AMOUNTS = {
   yearly:    { usd: 99.99, myr: 109.99 },
 } as const;
 
-export function formatPrice(amount: number, currency = CURRENCY): string {
+export function formatPrice(amount: number, currency: Currency): string {
   return currency === "myr" ? `RM${amount.toFixed(2)}` : `$${amount.toFixed(2)}`;
 }
 
-function saving(plan: "quarterly" | "yearly", months: number): string {
-  const full = AMOUNTS.monthly[CURRENCY] * months;
-  const pct = Math.round((1 - AMOUNTS[plan][CURRENCY] / full) * 100);
+function saving(plan: "quarterly" | "yearly", months: number, c: Currency): string {
+  const pct = Math.round((1 - AMOUNTS[plan][c] / (AMOUNTS.monthly[c] * months)) * 100);
   return `Save ${pct}% vs monthly`;
 }
 
-export const PLANS = [
-  { id:"trial", name:"Free Trial", price: formatPrice(0).replace(".00",""), period:"for 1 month", note:"No credit card required",
-    perks:["Full AI page builder","Public business page","Booking inbox","QR code sharing"], highlight:false },
-  { id:"monthly", name:"Pro Monthly", price: formatPrice(AMOUNTS.monthly[CURRENCY]), period:"per month", note:"Cancel anytime", perks:PRO_PERKS, highlight:false },
-  { id:"quarterly", name:"Pro Quarterly", price: formatPrice(AMOUNTS.quarterly[CURRENCY]), period:"every 3 months", note: saving("quarterly", 3), perks:PRO_PERKS, highlight:true },
-  { id:"yearly", name:"Pro Yearly", price: formatPrice(AMOUNTS.yearly[CURRENCY]), period:"per year", note:`Best value — ${saving("yearly", 12).toLowerCase()}`, perks:PRO_PERKS, highlight:false },
-];
+export function getPlans(c: Currency) {
+  return [
+    { id:"trial", name:"Free Trial", price: c === "myr" ? "RM0" : "$0", period:"for 1 month", note:"No credit card required",
+      perks:["Full AI page builder","Public business page","Booking inbox","QR code sharing"], highlight:false },
+    { id:"monthly", name:"Pro Monthly", price: formatPrice(AMOUNTS.monthly[c], c), period:"per month", note:"Cancel anytime", perks:[...PRO_PERKS], highlight:false },
+    { id:"quarterly", name:"Pro Quarterly", price: formatPrice(AMOUNTS.quarterly[c], c), period:"every 3 months", note: saving("quarterly", 3, c), perks:[...PRO_PERKS], highlight:true },
+    { id:"yearly", name:"Pro Yearly", price: formatPrice(AMOUNTS.yearly[c], c), period:"per year", note:`Best value — ${saving("yearly", 12, c).toLowerCase()}`, perks:[...PRO_PERKS], highlight:false },
+  ];
+}
 
-export const MONTHLY_PRICE_LABEL = `${formatPrice(AMOUNTS.monthly[CURRENCY])}/mo`;
+export function monthlyPriceLabel(c: Currency): string {
+  return `${formatPrice(AMOUNTS.monthly[c], c)}/mo`;
+}
 
 // New Stripe prices (USD default + MYR option). Must match create-checkout.
 export const PRICE_IDS = {

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, BadgeCheck, CalendarClock, Check, Link2, Palette, QrCode, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { PLANS } from "@/lib/bizcard";
+import { getPlans } from "@/lib/bizcard";
+import { useCurrency } from "@/hooks/useCurrency";
 import { createCheckout } from "@/lib/billing";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,6 +24,7 @@ const STEPS = [
 const fadeUp = { hidden:{ opacity:0, y:24 }, show:{ opacity:1, y:0 } };
 
 export default function Landing() {
+  const currency = useCurrency();
   const { session } = useAuth();
   const [busy, setBusy] = useState<string|null>(null);
 
@@ -174,7 +176,7 @@ export default function Landing() {
           <SectionHeading eyebrow="Pricing" title="Start free. Upgrade when it pays for itself."
             body="One month free with no credit card. Then pick the billing period that suits you." />
           <div className="mx-auto mt-12 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {PLANS.map((p, i) => (
+            {getPlans(currency).map((p, i) => (
               <motion.div key={p.id} initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
                 transition={{ duration:0.5, delay:i*0.07 }}
                 className={`hover-lift relative flex flex-col rounded-2xl border p-6 ${p.highlight ? "shadow-glow border-primary/40 bg-card" : "bg-card shadow-soft"}`}>
